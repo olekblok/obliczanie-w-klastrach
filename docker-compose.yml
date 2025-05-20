@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  hbase-master:
+    image: harisekhon/hbase
+    container_name: hbase-master
+    environment:
+      HBASE_ROLE: master
+    ports:
+      - "16010:16010"
+    networks:
+      - hbase-net
+
+  hbase-thrift:
+    image: harisekhon/hbase
+    container_name: hbase-thrift
+    command: thrift
+    ports:
+      - "9090:9090"
+    depends_on:
+      - hbase-master
+    networks:
+      - hbase-net
+
+  hbase-regionserver:
+    image: harisekhon/hbase
+    container_name: hbase-regionserver
+    environment:
+      HBASE_ROLE: regionserver
+    networks:
+      - hbase-net
+
+  flask-app:
+    build: ./flask-app
+    container_name: etf-api
+    depends_on:
+      - hbase-thrift
+    volumes:
+      - ./ETFs:/app/ETFs
+    environment:
+      - HBASE_HOST=hbase-thrift
+      - HBASE_PORT=9090
+    ports:
+      - "5050:5000"
+    networks:
+      - hbase-net
+
+networks:
+  hbase-net:
+    driver: bridge
